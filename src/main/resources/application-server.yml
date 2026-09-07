@@ -12,7 +12,10 @@ spring:
     console:
       enabled: false
 server:
-  port: ${PORT:8080}
+  port: ${PORT:18080}
+  address: ${SERVER_ADDRESS:127.0.0.1}
+  servlet:
+    context-path: ${CONTEXT_PATH:}
 app:
   seed:
     admin-password: ${ADMIN_PASSWORD:admin123}

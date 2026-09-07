@@ -38,8 +38,10 @@ mvn spring-boot:run
 - `mysql`：MySQL 8，通过 `DB_HOST`、`DB_PORT`、`DB_NAME`、`DB_USER`、`DB_PASSWORD` 配置
 
 ```bash
-java -jar target/library-borrowing-system-1.0.1.jar --spring.profiles.active=server
+java -jar target/library-borrowing-system-1.0.2.jar --spring.profiles.active=server
 ```
+
+与其他站点共用 Nginx 时，可设置 `CONTEXT_PATH=/library`、`PORT=18080`，然后使用 `deploy/nginx-library.conf` 中的子路径反向代理配置。
 
 ## 分支
 

@@ -1,9 +1,10 @@
 const state={auth:'',me:null,books:[],readers:[],types:[],loans:[],reservations:[],reminders:[],accounts:[]};
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const contextPath=location.pathname.startsWith('/library')?'/library':'';
 
 async function api(path,options={}){
   const headers={Authorization:`Basic ${state.auth}`,...(options.body?{'Content-Type':'application/json'}:{}),...(options.headers||{})};
-  const res=await fetch(path,{...options,headers});
+  const res=await fetch(`${contextPath}${path}`,{...options,headers});
   if(!res.ok){let msg=`请求失败（${res.status}）`;try{const body=await res.json();msg=body.message||msg}catch(e){}throw new Error(msg)}
   const text=await res.text();
   return text?JSON.parse(text):null;
