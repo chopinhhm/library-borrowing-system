@@ -15,9 +15,31 @@
 mvn spring-boot:run
 ```
 
-演示账号：管理员 `admin / admin123`，读者 `reader / reader123`。
+浏览器访问 `http://localhost:8080/`。演示账号：管理员 `admin / admin123`，读者 `reader / reader123`。
 
 运行测试：`mvn test`。
+
+接口文档：`http://localhost:8080/swagger-ui/index.html`。
+
+## 已实现功能
+
+- 登录认证、管理员和读者角色控制、账号启停与操作日志
+- 图书检索、新增、编辑、删除及库存联动
+- 读者资料、读者类型、借期、续借次数和罚金规则
+- 借书、还书、续借、预约、取消预约和逾期清单
+- 逾期罚金计算、借阅资格判断及流通统计
+- 管理员后台和读者端响应式网页
+- H2 本地/服务器持久化配置及 MySQL 可选配置
+
+## 配置环境
+
+- 默认：内存 H2，适合开发和测试
+- `server`：文件型 H2，适合课程演示服务器
+- `mysql`：MySQL 8，通过 `DB_HOST`、`DB_PORT`、`DB_NAME`、`DB_USER`、`DB_PASSWORD` 配置
+
+```bash
+java -jar target/library-borrowing-system-0.1.0-SNAPSHOT.jar --spring.profiles.active=server
+```
 
 ## 分支
 

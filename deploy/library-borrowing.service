@@ -1,0 +1,16 @@
+[Unit]
+Description=Library Borrowing System
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/opt/library-borrowing
+EnvironmentFile=/opt/library-borrowing/library.env
+ExecStart=/usr/bin/java -jar /opt/library-borrowing/library.jar --spring.profiles.active=server
+Restart=always
+RestartSec=5
+SuccessExitStatus=143
+
+[Install]
+WantedBy=multi-user.target

@@ -77,6 +77,20 @@ public class CirculationService {
     }
 
     public List<Loan> readerLoans(Long readerId) { return loans.findByReaderIdOrderByBorrowedAtDesc(readerId); }
+    public List<Loan> allLoans() { return loans.findAll(); }
+    public List<Loan> overdueLoans() { return loans.findByStatusAndDueAtBeforeOrderByDueAtAsc(Loan.Status.BORROWED, LocalDate.now()); }
+    public List<Reservation> activeReservations() { return reservations.findByStatusOrderByCreatedAtAsc(Reservation.Status.ACTIVE); }
+    public List<Reservation> readerReservations(Long readerId) { return reservations.findByReaderIdOrderByCreatedAtDesc(readerId); }
+    public Long readerIdForLoan(Long loanId) { return loans.findById(loanId).orElseThrow(() -> new BusinessException("借阅记录不存在")).getReader().getId(); }
+    public Long readerIdForReservation(Long reservationId) { return reservations.findById(reservationId).orElseThrow(() -> new BusinessException("预约记录不存在")).getReader().getId(); }
+
+    @Transactional
+    public Reservation cancelReservation(Long reservationId) {
+        Reservation reservation = reservations.findById(reservationId).orElseThrow(() -> new BusinessException("预约记录不存在"));
+        if (reservation.getStatus() != Reservation.Status.ACTIVE) throw new BusinessException("该预约已结束");
+        reservation.setStatus(Reservation.Status.CANCELLED);
+        return reservations.save(reservation);
+    }
     private Reader reader(Long id) { return readers.findById(id).orElseThrow(() -> new BusinessException("读者不存在")); }
     private Book book(Long id) { return books.findById(id).orElseThrow(() -> new BusinessException("图书不存在")); }
     private Loan activeLoan(Long id) {
