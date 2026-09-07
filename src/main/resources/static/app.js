@@ -1,4 +1,4 @@
-const state={auth:'',me:null,books:[],readers:[],types:[],loans:[],reservations:[],accounts:[]};
+const state={auth:'',me:null,books:[],readers:[],types:[],loans:[],reservations:[],reminders:[],accounts:[]};
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 
 async function api(path,options={}){
@@ -14,6 +14,8 @@ function notify(message,error=false){$('#notice').innerHTML=`<div class="notice 
 function escapeHtml(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
 function status(text,kind=''){return `<span class="status ${kind}">${escapeHtml(text)}</span>`}
 function empty(cols,text='暂无数据'){return `<tr><td colspan="${cols}" class="empty">${text}</td></tr>`}
+function todayIso(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+function isOverdue(loan){return loan.status==='BORROWED'&&loan.dueAt<todayIso()}
 
 $('#loginForm').addEventListener('submit',async e=>{
   e.preventDefault();
@@ -48,8 +50,8 @@ async function showView(name){
 async function loadDashboard(){
   let values;
   if(admin())values=await api('/api/admin/statistics');
-  else{const [books,loans]=await Promise.all([api('/api/books'),api(`/api/circulation/readers/${state.me.readerId}/loans`)]);values={bookTitles:books.length,readers:'-',activeLoans:loans.filter(x=>x.status==='BORROWED').length,returnedLoans:loans.filter(x=>x.status==='RETURNED').length,operationLogs:'-'}}
-  const cards=[['馆藏书目',values.bookTitles],['读者数量',values.readers],['当前在借',values.activeLoans],['已归还',values.returnedLoans],['操作记录',values.operationLogs]];
+  else{const [books,loans]=await Promise.all([api('/api/books'),api(`/api/circulation/readers/${state.me.readerId}/loans`)]);values={bookTitles:books.length,readers:'-',activeLoans:loans.filter(x=>x.status==='BORROWED').length,returnedLoans:loans.filter(x=>x.status==='RETURNED').length,reminders:'-'}}
+  const cards=[['馆藏书目',values.bookTitles],['读者数量',values.readers],['当前在借',values.activeLoans],['已归还',values.returnedLoans],['催还记录',values.reminders]];
   $('#stats').innerHTML=cards.map(x=>`<div class="stat"><small>${x[0]}</small><strong>${x[1]}</strong></div>`).join('');
 }
 
@@ -85,18 +87,20 @@ async function ensureCatalog(){if(!state.books.length)state.books=await api('/ap
 async function loadCirculation(){
   await ensureCatalog();
   if(admin()){
-    [state.loans,state.reservations]=await Promise.all([api('/api/circulation/admin/loans'),api('/api/circulation/admin/reservations')]);
+    [state.loans,state.reservations,state.reminders]=await Promise.all([api('/api/circulation/admin/loans'),api('/api/circulation/admin/reservations'),api('/api/circulation/admin/reminders')]);
   }else{
     [state.loans,state.reservations]=await Promise.all([api(`/api/circulation/readers/${state.me.readerId}/loans`),api(`/api/circulation/readers/${state.me.readerId}/reservations`)]);
   }
-  $('#loanRows').innerHTML=state.loans.length?state.loans.map(l=>`<tr><td>${l.id}</td><td>${escapeHtml(l.reader.name)}</td><td>${escapeHtml(l.book.title)}</td><td>${l.borrowedAt}</td><td>${l.dueAt}</td><td>${l.status==='BORROWED'?status(new Date(l.dueAt)<new Date()?'已逾期':'在借',new Date(l.dueAt)<new Date()?'warn':''):status('已归还')}</td><td>¥${l.fine||0}</td><td><div class="actions">${l.status==='BORROWED'?`<button onclick="renewLoan(${l.id})">续借</button>${admin()?`<button onclick="returnLoan(${l.id})">还书</button>`:''}`:''}</div></td></tr>`).join(''):empty(8);
+  $('#loanRows').innerHTML=state.loans.length?state.loans.map(l=>{const overdue=isOverdue(l);return `<tr><td>${l.id}</td><td>${escapeHtml(l.reader.name)}</td><td>${escapeHtml(l.book.title)}</td><td>${l.borrowedAt}</td><td>${l.dueAt}</td><td>${l.status==='BORROWED'?status(overdue?'已逾期':'在借',overdue?'warn':''):status('已归还')}</td><td>¥${l.fine||0}</td><td><div class="actions">${l.status==='BORROWED'?`<button onclick="renewLoan(${l.id})">续借</button>${admin()?`<button onclick="returnLoan(${l.id})">还书</button>${overdue?`<button onclick="remindLoan(${l.id})">催还</button>`:''}`:''}`:''}</div></td></tr>`}).join(''):empty(8);
   $('#reservationRows').innerHTML=state.reservations.length?state.reservations.map(r=>`<tr><td>${r.id}</td><td>${escapeHtml(r.reader.name)}</td><td>${escapeHtml(r.book.title)}</td><td>${r.createdAt.replace('T',' ')}</td><td>${status(r.status==='ACTIVE'?'预约中':r.status)}</td><td>${r.status==='ACTIVE'?`<button onclick="cancelReservation(${r.id})">取消</button>`:''}</td></tr>`).join(''):empty(6);
+  if(admin())$('#reminderRows').innerHTML=state.reminders.length?state.reminders.map(r=>`<tr><td>${r.id}</td><td>${escapeHtml(r.loan.reader.name)}</td><td>${escapeHtml(r.loan.book.title)}</td><td>${escapeHtml(r.recipient||'-')}</td><td>${escapeHtml(r.message)}</td><td>${r.sentAt.replace('T',' ')}</td></tr>`).join(''):empty(6);
 }
 $('#borrowBtn').onclick=()=>circulationModal('办理借书','/api/circulation/borrow');
 $('#reserveBtn').onclick=()=>circulationModal('办理预约','/api/circulation/reserve');
 async function circulationModal(title,path){await ensureCatalog();const readerId=admin()?`<label>读者<select name="readerId">${state.readers.map(r=>`<option value="${r.id}">${escapeHtml(r.name)}（${escapeHtml(r.cardNumber)}）</option>`).join('')}</select></label>`:`<input type="hidden" name="readerId" value="${state.me.readerId}">`;openModal(title,`${readerId}<label>图书<select name="bookId">${state.books.map(b=>`<option value="${b.id}">${escapeHtml(b.title)}（可借 ${b.availableCopies}）</option>`).join('')}</select></label>`,async f=>{const x=Object.fromEntries(f);await api(`${path}?readerId=${x.readerId}&bookId=${x.bookId}`,{method:'POST'});notify(`${title}成功`);await loadCirculation()})}
 window.renewLoan=async id=>act(`/api/circulation/loans/${id}/renew`,'续借成功');
 window.returnLoan=async id=>act(`/api/circulation/loans/${id}/return`,'还书成功');
+window.remindLoan=async id=>act(`/api/circulation/admin/loans/${id}/remind`,'催还记录已创建');
 window.cancelReservation=async id=>act(`/api/circulation/reservations/${id}/cancel`,'预约已取消');
 async function act(path,msg){try{await api(path,{method:'POST'});notify(msg);await loadCirculation()}catch(e){notify(e.message,true)}}
 

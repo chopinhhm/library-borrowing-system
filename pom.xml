@@ -10,7 +10,7 @@
     </parent>
     <groupId>com.chopinhhm</groupId>
     <artifactId>library-borrowing-system</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>1.0.1</version>
     <name>library-borrowing-system</name>
     <description>图书借阅管理系统</description>
     <properties><java.version>8</java.version></properties>

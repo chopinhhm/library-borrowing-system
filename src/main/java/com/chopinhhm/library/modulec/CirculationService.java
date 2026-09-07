@@ -19,13 +19,15 @@ public class CirculationService {
     private final ReaderRepository readers;
     private final LoanRepository loans;
     private final ReservationRepository reservations;
+    private final OverdueReminderRepository reminders;
     private final BorrowingEligibilityService eligibility;
     private final FineCalculator fineCalculator;
 
     public CirculationService(BookRepository books, ReaderRepository readers, LoanRepository loans,
-                              ReservationRepository reservations, BorrowingEligibilityService eligibility,
-                              FineCalculator fineCalculator) {
+                              ReservationRepository reservations, OverdueReminderRepository reminders,
+                              BorrowingEligibilityService eligibility, FineCalculator fineCalculator) {
         this.books = books; this.readers = readers; this.loans = loans; this.reservations = reservations;
+        this.reminders = reminders;
         this.eligibility = eligibility; this.fineCalculator = fineCalculator;
     }
 
@@ -79,6 +81,7 @@ public class CirculationService {
     public List<Loan> readerLoans(Long readerId) { return loans.findByReaderIdOrderByBorrowedAtDesc(readerId); }
     public List<Loan> allLoans() { return loans.findAll(); }
     public List<Loan> overdueLoans() { return loans.findByStatusAndDueAtBeforeOrderByDueAtAsc(Loan.Status.BORROWED, LocalDate.now()); }
+    public List<OverdueReminder> reminders() { return reminders.findAllByOrderBySentAtDesc(); }
     public List<Reservation> activeReservations() { return reservations.findByStatusOrderByCreatedAtAsc(Reservation.Status.ACTIVE); }
     public List<Reservation> readerReservations(Long readerId) { return reservations.findByReaderIdOrderByCreatedAtDesc(readerId); }
     public Long readerIdForLoan(Long loanId) { return loans.findById(loanId).orElseThrow(() -> new BusinessException("借阅记录不存在")).getReader().getId(); }
@@ -90,6 +93,18 @@ public class CirculationService {
         if (reservation.getStatus() != Reservation.Status.ACTIVE) throw new BusinessException("该预约已结束");
         reservation.setStatus(Reservation.Status.CANCELLED);
         return reservations.save(reservation);
+    }
+
+    @Transactional
+    public OverdueReminder sendReminder(Long loanId) {
+        Loan loan = activeLoan(loanId);
+        if (!loan.getDueAt().isBefore(LocalDate.now())) throw new BusinessException("该借阅记录尚未逾期");
+        OverdueReminder reminder = new OverdueReminder();
+        reminder.setLoan(loan);
+        reminder.setRecipient(loan.getReader().getEmail());
+        reminder.setMessage("请尽快归还《" + loan.getBook().getTitle() + "》，应还日期为 " + loan.getDueAt());
+        reminder.setSentAt(LocalDateTime.now());
+        return reminders.save(reminder);
     }
     private Reader reader(Long id) { return readers.findById(id).orElseThrow(() -> new BusinessException("读者不存在")); }
     private Book book(Long id) { return books.findById(id).orElseThrow(() -> new BusinessException("图书不存在")); }

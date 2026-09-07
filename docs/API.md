@@ -33,5 +33,7 @@
 | GET | `/api/circulation/readers/{id}/loans` | 读者借阅记录 |
 | GET | `/api/circulation/readers/{id}/reservations` | 读者预约记录 |
 | GET | `/api/circulation/admin/overdue` | 逾期清单 |
+| POST | `/api/circulation/admin/loans/{id}/remind` | 对逾期借阅发起系统催还 |
+| GET | `/api/circulation/admin/reminders` | 查询催还历史 |
 
 交互式接口文档位于 `/swagger-ui/index.html`。

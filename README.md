@@ -26,7 +26,7 @@ mvn spring-boot:run
 - 登录认证、管理员和读者角色控制、账号启停与操作日志
 - 图书检索、新增、编辑、删除及库存联动
 - 读者资料、读者类型、借期、续借次数和罚金规则
-- 借书、还书、续借、预约、取消预约和逾期清单
+- 借书、还书、续借、预约、取消预约、逾期清单和可追踪催还记录
 - 逾期罚金计算、借阅资格判断及流通统计
 - 管理员后台和读者端响应式网页
 - H2 本地/服务器持久化配置及 MySQL 可选配置
@@ -38,7 +38,7 @@ mvn spring-boot:run
 - `mysql`：MySQL 8，通过 `DB_HOST`、`DB_PORT`、`DB_NAME`、`DB_USER`、`DB_PASSWORD` 配置
 
 ```bash
-java -jar target/library-borrowing-system-0.1.0-SNAPSHOT.jar --spring.profiles.active=server
+java -jar target/library-borrowing-system-1.0.1.jar --spring.profiles.active=server
 ```
 
 ## 分支
