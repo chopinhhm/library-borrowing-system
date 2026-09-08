@@ -61,6 +61,7 @@ public class CirculationService {
     @Transactional
     public Loan renew(Long loanId) {
         Loan loan = activeLoan(loanId);
+        if (loan.getDueAt().isBefore(LocalDate.now())) throw new BusinessException("逾期图书不能续借，请先归还并结算罚金");
         if (loan.getRenewCount() >= loan.getReader().getReaderType().getMaxRenewals()) throw new BusinessException("已达到最大续借次数");
         if (reservations.existsByBookIdAndStatus(loan.getBook().getId(), Reservation.Status.ACTIVE)) throw new BusinessException("该图书已被预约，不能续借");
         loan.setRenewCount(loan.getRenewCount() + 1);
@@ -79,7 +80,10 @@ public class CirculationService {
     }
 
     public List<Loan> readerLoans(Long readerId) { return loans.findByReaderIdOrderByBorrowedAtDesc(readerId); }
-    public List<Loan> allLoans() { return loans.findAll(); }
+    public List<Loan> allLoans(Loan.Status status, boolean overdueOnly) {
+        if (overdueOnly) return overdueLoans();
+        return status == null ? loans.findAll() : loans.findByStatusOrderByDueAtAsc(status);
+    }
     public List<Loan> overdueLoans() { return loans.findByStatusAndDueAtBeforeOrderByDueAtAsc(Loan.Status.BORROWED, LocalDate.now()); }
     public List<OverdueReminder> reminders() { return reminders.findAllByOrderBySentAtDesc(); }
     public List<Reservation> activeReservations() { return reservations.findByStatusOrderByCreatedAtAsc(Reservation.Status.ACTIVE); }
