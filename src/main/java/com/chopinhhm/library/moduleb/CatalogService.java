@@ -2,6 +2,7 @@ package com.chopinhhm.library.moduleb;
 
 import com.chopinhhm.library.common.BusinessException;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,8 +19,22 @@ public class CatalogService {
     }
 
     public List<Book> searchBooks(String keyword) {
-        if (keyword == null || keyword.trim().isEmpty()) return books.findAll();
-        return books.findByTitleContainingIgnoreCaseOrAuthorContainingIgnoreCase(keyword, keyword);
+        return searchBooks(keyword, null, null, false);
+    }
+
+    public List<Book> searchBooks(String keyword, String category, String shelfLocation, boolean availableOnly) {
+        List<Book> candidates = isBlank(keyword) ? books.findAll()
+            : books.findByTitleContainingIgnoreCaseOrAuthorContainingIgnoreCase(keyword.trim(), keyword.trim());
+        return candidates.stream()
+            .filter(book -> isBlank(category) || category.trim().equalsIgnoreCase(book.getCategory()))
+            .filter(book -> isBlank(shelfLocation) || containsIgnoreCase(book.getShelfLocation(), shelfLocation.trim()))
+            .filter(book -> !availableOnly || book.getAvailableCopies() > 0)
+            .collect(Collectors.toList());
+    }
+
+    private boolean isBlank(String value) { return value == null || value.trim().isEmpty(); }
+    private boolean containsIgnoreCase(String value, String part) {
+        return value != null && value.toLowerCase().contains(part.toLowerCase());
     }
 
     @Transactional
