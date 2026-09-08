@@ -56,11 +56,17 @@ async function loadDashboard(){
   $('#stats').innerHTML=cards.map(x=>`<div class="stat"><small>${x[0]}</small><strong>${x[1]}</strong></div>`).join('');
 }
 
-async function loadBooks(keyword=''){
-  state.books=await api(`/api/books${keyword?`?keyword=${encodeURIComponent(keyword)}`:''}`);
+async function loadBooks(){
+  const params=new URLSearchParams();
+  if($('#bookKeyword').value.trim())params.set('keyword',$('#bookKeyword').value.trim());
+  if($('#bookCategory').value.trim())params.set('category',$('#bookCategory').value.trim());
+  if($('#bookShelf').value.trim())params.set('shelfLocation',$('#bookShelf').value.trim());
+  if($('#availableOnly').checked)params.set('availableOnly','true');
+  state.books=await api(`/api/books${params.toString()?`?${params}`:''}`);
   $('#bookRows').innerHTML=state.books.length?state.books.map(b=>`<tr><td>${b.id}</td><td>${escapeHtml(b.isbn)}</td><td>${escapeHtml(b.title)}</td><td>${escapeHtml(b.author)}</td><td>${escapeHtml(b.category)}</td><td>${escapeHtml(b.shelfLocation)}</td><td>${b.availableCopies}/${b.totalCopies}</td>${admin()?`<td><div class="actions"><button onclick="editBook(${b.id})">编辑</button><button onclick="deleteBook(${b.id})">删除</button></div></td>`:''}</tr>`).join(''):empty(admin()?8:7);
 }
-$('#searchBooks').onclick=()=>loadBooks($('#bookKeyword').value).catch(e=>notify(e.message,true));
+$('#searchBooks').onclick=()=>loadBooks().catch(e=>notify(e.message,true));
+$('#resetBooks').onclick=()=>{['bookKeyword','bookCategory','bookShelf'].forEach(id=>$(`#${id}`).value='');$('#availableOnly').checked=false;loadBooks().catch(e=>notify(e.message,true))};
 $('#addBookBtn').onclick=()=>bookModal();
 function bookModal(book={}){openModal(book.id?'编辑图书':'新增图书',`
   ${field('isbn','ISBN',book.isbn||'','required')}${field('title','书名',book.title||'','required')}

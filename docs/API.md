@@ -7,7 +7,7 @@
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
 | GET | `/api/auth/me` | 当前登录账号、角色和关联读者 |
-| GET | `/api/books?keyword=` | 查询馆藏 |
+| GET | `/api/books?keyword=&category=&shelfLocation=&availableOnly=` | 按关键字、分类、书架和可借状态查询馆藏 |
 | GET | `/api/reader-types` | 查询借阅规则 |
 
 ## 管理员接口

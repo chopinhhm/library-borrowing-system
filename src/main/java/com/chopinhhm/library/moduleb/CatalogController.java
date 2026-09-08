@@ -19,7 +19,12 @@ public class CatalogController {
     public CatalogController(CatalogService service) { this.service = service; }
 
     @GetMapping("/books")
-    public List<Book> books(@RequestParam(required = false) String keyword) { return service.searchBooks(keyword); }
+    public List<Book> books(@RequestParam(required = false) String keyword,
+                            @RequestParam(required = false) String category,
+                            @RequestParam(required = false) String shelfLocation,
+                            @RequestParam(defaultValue = "false") boolean availableOnly) {
+        return service.searchBooks(keyword, category, shelfLocation, availableOnly);
+    }
 
     @PostMapping("/admin/books")
     public Book saveBook(@Valid @RequestBody Book book) { return service.saveBook(book); }
