@@ -88,9 +88,14 @@ async function ensureCatalog(){if(!state.books.length)state.books=await api('/ap
 async function loadCirculation(){
   await ensureCatalog();
   if(admin()){
-    [state.loans,state.reservations,state.reminders]=await Promise.all([api('/api/circulation/admin/loans'),api('/api/circulation/admin/reservations'),api('/api/circulation/admin/reminders')]);
+    const params=new URLSearchParams();
+    if($('#loanStatus').value)params.set('status',$('#loanStatus').value);
+    if($('#overdueOnly').checked)params.set('overdueOnly','true');
+    [state.loans,state.reservations,state.reminders]=await Promise.all([api(`/api/circulation/admin/loans${params.toString()?`?${params}`:''}`),api('/api/circulation/admin/reservations'),api('/api/circulation/admin/reminders')]);
   }else{
     [state.loans,state.reservations]=await Promise.all([api(`/api/circulation/readers/${state.me.readerId}/loans`),api(`/api/circulation/readers/${state.me.readerId}/reservations`)]);
+    if($('#loanStatus').value)state.loans=state.loans.filter(l=>l.status===$('#loanStatus').value);
+    if($('#overdueOnly').checked)state.loans=state.loans.filter(isOverdue);
   }
   $('#loanRows').innerHTML=state.loans.length?state.loans.map(l=>{const overdue=isOverdue(l);return `<tr><td>${l.id}</td><td>${escapeHtml(l.reader.name)}</td><td>${escapeHtml(l.book.title)}</td><td>${l.borrowedAt}</td><td>${l.dueAt}</td><td>${l.status==='BORROWED'?status(overdue?'已逾期':'在借',overdue?'warn':''):status('已归还')}</td><td>¥${l.fine||0}</td><td><div class="actions">${l.status==='BORROWED'?`<button onclick="renewLoan(${l.id})">续借</button>${admin()?`<button onclick="returnLoan(${l.id})">还书</button>${overdue?`<button onclick="remindLoan(${l.id})">催还</button>`:''}`:''}`:''}</div></td></tr>`}).join(''):empty(8);
   $('#reservationRows').innerHTML=state.reservations.length?state.reservations.map(r=>`<tr><td>${r.id}</td><td>${escapeHtml(r.reader.name)}</td><td>${escapeHtml(r.book.title)}</td><td>${r.createdAt.replace('T',' ')}</td><td>${status(r.status==='ACTIVE'?'预约中':r.status)}</td><td>${r.status==='ACTIVE'?`<button onclick="cancelReservation(${r.id})">取消</button>`:''}</td></tr>`).join(''):empty(6);
@@ -98,6 +103,7 @@ async function loadCirculation(){
 }
 $('#borrowBtn').onclick=()=>circulationModal('办理借书','/api/circulation/borrow');
 $('#reserveBtn').onclick=()=>circulationModal('办理预约','/api/circulation/reserve');
+$('#filterLoans').onclick=()=>loadCirculation().catch(e=>notify(e.message,true));
 async function circulationModal(title,path){await ensureCatalog();const readerId=admin()?`<label>读者<select name="readerId">${state.readers.map(r=>`<option value="${r.id}">${escapeHtml(r.name)}（${escapeHtml(r.cardNumber)}）</option>`).join('')}</select></label>`:`<input type="hidden" name="readerId" value="${state.me.readerId}">`;openModal(title,`${readerId}<label>图书<select name="bookId">${state.books.map(b=>`<option value="${b.id}">${escapeHtml(b.title)}（可借 ${b.availableCopies}）</option>`).join('')}</select></label>`,async f=>{const x=Object.fromEntries(f);await api(`${path}?readerId=${x.readerId}&bookId=${x.bookId}`,{method:'POST'});notify(`${title}成功`);await loadCirculation()})}
 window.renewLoan=async id=>act(`/api/circulation/loans/${id}/renew`,'续借成功');
 window.returnLoan=async id=>act(`/api/circulation/loans/${id}/return`,'还书成功');

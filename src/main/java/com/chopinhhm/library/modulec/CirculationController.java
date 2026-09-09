@@ -22,7 +22,11 @@ public class CirculationController {
     @GetMapping("/readers/{readerId}/loans") public List<Loan> readerLoans(@PathVariable Long readerId) { accessGuard.assertReaderAccess(readerId); return service.readerLoans(readerId); }
     @GetMapping("/readers/{readerId}/reservations") public List<Reservation> readerReservations(@PathVariable Long readerId) { accessGuard.assertReaderAccess(readerId); return service.readerReservations(readerId); }
     @PostMapping("/reservations/{reservationId}/cancel") public Reservation cancel(@PathVariable Long reservationId) { accessGuard.assertReaderAccess(service.readerIdForReservation(reservationId)); return service.cancelReservation(reservationId); }
-    @GetMapping("/admin/loans") public List<Loan> allLoans() { return service.allLoans(); }
+    @GetMapping("/admin/loans")
+    public List<Loan> allLoans(@RequestParam(required = false) Loan.Status status,
+                               @RequestParam(defaultValue = "false") boolean overdueOnly) {
+        return service.allLoans(status, overdueOnly);
+    }
     @GetMapping("/admin/overdue") public List<Loan> overdue() { return service.overdueLoans(); }
     @GetMapping("/admin/reminders") public List<OverdueReminder> reminders() { return service.reminders(); }
     @PostMapping("/admin/loans/{loanId}/remind") public OverdueReminder remind(@PathVariable Long loanId) { return service.sendReminder(loanId); }
