@@ -20,6 +20,8 @@
 | GET/POST/PATCH | `/api/admin/accounts` | 查询、新增、启停账号 |
 | GET | `/api/admin/statistics` | 流通概览统计 |
 | GET | `/api/admin/logs` | 查询操作日志 |
+| GET | `/api/admin/analysis/overdue` | 查询逾期天数和当前预估罚金 |
+| GET | `/api/admin/analysis/overdue.csv` | 导出 UTF-8 CSV 逾期报表 |
 
 ## 借阅流通接口
 
