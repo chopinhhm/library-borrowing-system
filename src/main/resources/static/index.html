@@ -32,6 +32,7 @@
         <button data-view="readers" data-admin>读者管理</button>
         <button data-view="circulation">借阅流通</button>
         <button data-view="accounts" data-admin>账号权限</button>
+        <button data-view="analysis" data-admin>统计分析</button>
         <button data-view="logs" data-admin>操作日志</button>
       </nav>
       <div class="user-box"><div><strong id="currentUser"></strong><small id="currentRole"></small></div><button id="logoutBtn">退出</button></div>
@@ -70,6 +71,12 @@
       <section id="accounts" class="view">
         <div class="toolbar"><button id="addAccountBtn" class="primary">新增账号</button></div>
         <div class="panel table-wrap"><table><thead><tr><th>ID</th><th>用户名</th><th>角色</th><th>关联读者</th><th>状态</th><th>操作</th></tr></thead><tbody id="accountRows"></tbody></table></div>
+      </section>
+
+      <section id="analysis" class="view">
+        <div class="toolbar"><button id="downloadOverdueCsv" class="primary">导出 CSV</button></div>
+        <div id="analysisStats" class="stats"></div>
+        <div class="panel table-wrap"><div class="panel-head"><h3>逾期记录与罚金预估</h3></div><table><thead><tr><th>借阅ID</th><th>读者</th><th>图书</th><th>应还日期</th><th>逾期天数</th><th>预估罚金</th></tr></thead><tbody id="analysisRows"></tbody></table></div>
       </section>
 
       <section id="logs" class="view">

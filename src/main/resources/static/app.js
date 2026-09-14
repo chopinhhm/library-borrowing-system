@@ -39,13 +39,13 @@ $('#logoutBtn').onclick=()=>{localStorage.removeItem('libraryAuth');location.rel
 $('#nav').onclick=e=>{const b=e.target.closest('[data-view]');if(b)showView(b.dataset.view)};
 document.body.addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(b)showView(b.dataset.go)});
 
-const meta={dashboard:['系统概览','查看图书馆当前运行状态'],books:['图书管理','检索和维护馆藏资料'],readers:['读者管理','维护读者资料和借阅规则'],circulation:['借阅流通','办理借书、还书、续借和预约'],accounts:['账号权限','管理登录账号和角色'],logs:['操作日志','追踪系统接口访问记录']};
+const meta={dashboard:['系统概览','查看图书馆当前运行状态'],books:['图书管理','检索和维护馆藏资料'],readers:['读者管理','维护读者资料和借阅规则'],circulation:['借阅流通','办理借书、还书、续借和预约'],accounts:['账号权限','管理登录账号和角色'],analysis:['统计分析','查看逾期记录和罚金预估'],logs:['操作日志','追踪系统接口访问记录']};
 async function showView(name){
-  if(!admin()&&['readers','accounts','logs'].includes(name))name='dashboard';
+  if(!admin()&&['readers','accounts','analysis','logs'].includes(name))name='dashboard';
   $$('.view').forEach(v=>v.classList.toggle('active',v.id===name));
   $$('#nav button').forEach(v=>v.classList.toggle('active',v.dataset.view===name));
   $('#pageTitle').textContent=meta[name][0];$('#pageSubtitle').textContent=meta[name][1];
-  try{if(name==='dashboard')await loadDashboard();if(name==='books')await loadBooks();if(name==='readers')await loadReaders();if(name==='circulation')await loadCirculation();if(name==='accounts')await loadAccounts();if(name==='logs')await loadLogs()}catch(e){notify(e.message,true)}
+  try{if(name==='dashboard')await loadDashboard();if(name==='books')await loadBooks();if(name==='readers')await loadReaders();if(name==='circulation')await loadCirculation();if(name==='accounts')await loadAccounts();if(name==='analysis')await loadAnalysis();if(name==='logs')await loadLogs()}catch(e){notify(e.message,true)}
 }
 
 async function loadDashboard(){
@@ -122,6 +122,27 @@ $('#addAccountBtn').onclick=async()=>{if(!state.readers.length)state.readers=awa
 window.toggleAccount=async id=>{const a=state.accounts.find(x=>x.id===id);try{await api(`/api/admin/accounts/${id}`,{method:'PATCH',body:JSON.stringify({enabled:!a.enabled,role:a.role,readerId:a.readerId})});notify('账号状态已更新');loadAccounts()}catch(e){notify(e.message,true)}};
 
 async function loadLogs(){const logs=await api('/api/admin/logs?limit=200');$('#logRows').innerHTML=logs.map(l=>`<tr><td>${(l.operatedAt||'').replace('T',' ')}</td><td>${escapeHtml(l.username)}</td><td>${l.method}</td><td>${escapeHtml(l.path)}</td><td>${l.statusCode}</td></tr>`).join('')||empty(5)}
+
+async function loadAnalysis(){
+  const rows=await api('/api/admin/analysis/overdue');
+  const totalFine=rows.reduce((sum,row)=>sum+(Number(row.estimatedFine)||0),0);
+  const maxDays=rows.reduce((max,row)=>Math.max(max,Number(row.overdueDays)||0),0);
+  const cards=[['逾期记录',rows.length],['预估罚金',`¥${totalFine.toFixed(2)}`],['最长逾期',`${maxDays} 天`]];
+  $('#analysisStats').innerHTML=cards.map(x=>`<div class="stat"><small>${x[0]}</small><strong>${x[1]}</strong></div>`).join('');
+  $('#analysisRows').innerHTML=rows.length?rows.map(r=>`<tr><td>${r.loanId}</td><td>${escapeHtml(r.readerName)}</td><td>${escapeHtml(r.bookTitle)}</td><td>${r.dueAt}</td><td>${r.overdueDays}</td><td>¥${Number(r.estimatedFine).toFixed(2)}</td></tr>`).join(''):empty(6,'暂无逾期记录');
+}
+
+$('#downloadOverdueCsv').onclick=async()=>{
+  try{
+    const res=await fetch(`${contextPath}/api/admin/analysis/overdue.csv`,{headers:{Authorization:`Basic ${state.auth}`}});
+    if(!res.ok)throw new Error(`导出失败（${res.status}）`);
+    const blob=await res.blob();
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;a.download='overdue-report.csv';a.click();
+    URL.revokeObjectURL(url);
+  }catch(e){notify(e.message,true)}
+};
 
 function field(name,label,value='',attrs='',type='text'){return `<label>${label}<input name="${name}" type="${type}" value="${escapeHtml(value)}" ${attrs}></label>`}
 function openModal(title,body,onSave){$('#modalTitle').textContent=title;$('#modalBody').innerHTML=body;$('#modalForm').onsubmit=async e=>{e.preventDefault();try{await onSave(new FormData(e.target));$('#modal').close()}catch(err){notify(err.message,true)}};$('#modal').showModal()}
