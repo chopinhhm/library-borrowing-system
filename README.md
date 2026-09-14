@@ -31,21 +31,21 @@ mvn spring-boot:run
 - 借阅记录按状态和逾期条件筛选，逾期图书禁止续借
 - 逾期罚金计算、借阅资格判断、流通统计、逾期分析与 CSV 报表导出
 - 管理员后台和读者端响应式网页
-- H2 本地/服务器持久化配置及 MySQL 可选配置
+- H2 本地开发和服务器 MySQL 持久化配置
 
 初始化数据包含 30 本图书、5 类读者、20 位读者，以及可演示的在借、已归还、逾期、预约和催还记录。除 `admin / admin123` 和 `reader / reader123` 外，四位项目成员也有同名演示账号，例如 `huanghaoming / reader123`。
 
 ## 配置环境
 
 - 默认：内存 H2，适合开发和测试
-- `server`：文件型 H2，适合课程演示服务器
-- `mysql`：MySQL 8，通过 `DB_HOST`、`DB_PORT`、`DB_NAME`、`DB_USER`、`DB_PASSWORD` 配置
+- `server`：文件型 H2，保留为备用方案
+- `mysql`：服务器默认方案，MySQL 与项目部署在同一台机器，通过 `127.0.0.1:3306` 连接
 
 ```bash
-java -jar target/library-borrowing-system-1.1.0.jar --spring.profiles.active=server
+java -jar target/library-borrowing-system-1.1.0.jar --spring.profiles.active=mysql
 ```
 
-与其他站点共用 Nginx 时，可设置 `CONTEXT_PATH=/library`、`PORT=18080`，然后使用 `deploy/nginx-library.conf` 中的子路径反向代理配置。
+MySQL 初始化脚本和完整服务器部署步骤见 `deploy/README.md`。与其他站点共用 Nginx 时，可设置 `CONTEXT_PATH=/library`、`PORT=18080`，然后使用 `deploy/nginx-library.conf` 中的子路径反向代理配置。
 
 ## 分支
 

@@ -7,7 +7,7 @@ Type=simple
 User=ubuntu
 WorkingDirectory=/opt/library-borrowing
 EnvironmentFile=/opt/library-borrowing/library.env
-ExecStart=/usr/bin/java -jar /opt/library-borrowing/library.jar --spring.profiles.active=server
+ExecStart=/usr/bin/java -jar /opt/library-borrowing/library.jar --spring.profiles.active=mysql
 Restart=always
 RestartSec=5
 SuccessExitStatus=143

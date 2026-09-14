@@ -1,10 +1,10 @@
 # 使用 Navicat 连接数据库
 
-本项目默认的 `server` 配置使用文件型 H2，`mysql` 配置才适合直接用 Navicat 查看。
+服务器部署现已默认使用 MySQL，MySQL 和项目部署在同一台服务器上。应用通过 `127.0.0.1:3306` 连接数据库，不需要把 MySQL 端口暴露到公网。
 
-## 推荐：切换到 MySQL
+## 服务器上的 MySQL 配置
 
-在服务器上准备一个 MySQL 8 数据库，并把下面的环境变量写进部署配置：
+部署环境变量应包含：
 
 ```bash
 DB_HOST=127.0.0.1
@@ -20,7 +20,7 @@ DB_PASSWORD=你的数据库密码
 java -jar library.jar --spring.profiles.active=mysql
 ```
 
-如果使用 systemd，就把 `library-borrowing.service` 中的启动参数改成 `--spring.profiles.active=mysql`，并确保 `EnvironmentFile` 里包含上面的 MySQL 变量。
+使用 MySQL 管理员账号执行 `deploy/mysql-init.sql` 可以创建数据库和 `library` 用户。
 
 ## Navicat 连接信息
 
@@ -29,7 +29,7 @@ java -jar library.jar --spring.profiles.active=mysql
 | 字段 | 建议值 |
 | --- | --- |
 | 连接名 | 图书借阅系统 |
-| 主机 | 服务器 IP 或 `127.0.0.1` |
+| 主机 | 服务器公网 IP |
 | 端口 | `3306` |
 | 用户名 | `library` |
 | 密码 | 你的 `DB_PASSWORD` |
@@ -37,11 +37,27 @@ java -jar library.jar --spring.profiles.active=mysql
 
 第一次启动后，JPA 会自动创建表，并在空表时自动写入 30 本图书、20 位读者、借阅、预约、逾期和催还演示数据。
 
-## 如果服务器还在用 H2
+## 推荐：使用 SSH 隧道
 
-当前部署模板中的 `--spring.profiles.active=server` 使用的是文件型 H2，不能像 MySQL 一样用 Navicat 的 MySQL 连接直接打开。可以选择：
+在 Navicat 连接设置的 SSH 标签页填写：
 
-1. 切换到上面的 `mysql` 配置。
-2. 或使用支持 H2/JDBC 的数据库工具连接 H2 文件数据库。
+| 字段 | 值 |
+| --- | --- |
+| 主机 | 服务器公网 IP |
+| 端口 | `22` |
+| 用户名 | 服务器 SSH 用户，例如 `ubuntu` |
+| 认证方式 | 密码或 SSH 私钥 |
 
-具体服务器 IP、MySQL 账号和密码需要向负责部署服务器的人确认。
+MySQL 标签页继续填写：
+
+```text
+主机：127.0.0.1
+端口：3306
+用户名：library
+密码：DB_PASSWORD
+数据库：library
+```
+
+这种方式下 MySQL 可以继续只监听 `127.0.0.1`，不用向公网开放 3306。
+
+如果选择直接连接，则需要让 MySQL 监听服务器网卡，并在云安全组或防火墙中只放行你的电脑 IP。为了安全，不建议对所有 IP 开放 MySQL 端口。
