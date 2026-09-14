@@ -1,0 +1,58 @@
+services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
+      MYSQL_DATABASE: ${DB_NAME:-library}
+      MYSQL_USER: ${DB_USER:-library}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD in .env}
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "${MYSQL_BIND_ADDRESS:-127.0.0.1}:${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    networks:
+      - library-net
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: library-borrowing-system:${APP_IMAGE_TAG:-1.1.0}
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      TZ: Asia/Shanghai
+      PORT: 18080
+      SERVER_ADDRESS: 0.0.0.0
+      CONTEXT_PATH: ${CONTEXT_PATH:-/library}
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-library}
+      DB_USER: ${DB_USER:-library}
+      DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD in .env}
+      READER_PASSWORD: ${READER_PASSWORD:?set READER_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:${APP_PORT:-18080}:18080"
+    networks:
+      - library-net
+
+volumes:
+  mysql-data:
+
+networks:
+  library-net:
+    driver: bridge

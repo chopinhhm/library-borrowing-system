@@ -1,26 +1,27 @@
 # 使用 Navicat 连接数据库
 
-服务器部署现已默认使用 MySQL，MySQL 和项目部署在同一台服务器上。应用通过 `127.0.0.1:3306` 连接数据库，不需要把 MySQL 端口暴露到公网。
+服务器部署现已默认使用 Docker Compose，MySQL 和项目运行在同一台服务器上。MySQL 容器只映射到服务器的 `127.0.0.1:3306`，不需要把数据库端口暴露到公网。
 
 ## 服务器上的 MySQL 配置
 
-部署环境变量应包含：
+Docker Compose 的 `.env` 应包含：
 
 ```bash
-DB_HOST=127.0.0.1
-DB_PORT=3306
 DB_NAME=library
 DB_USER=library
 DB_PASSWORD=你的数据库密码
+MYSQL_ROOT_PASSWORD=你的MySQL root密码
+MYSQL_BIND_ADDRESS=127.0.0.1
+MYSQL_PORT=3306
 ```
 
-服务启动参数使用 `mysql` 配置：
+启动命令：
 
 ```bash
-java -jar library.jar --spring.profiles.active=mysql
+docker compose up -d --build
 ```
 
-使用 MySQL 管理员账号执行 `deploy/mysql-init.sql` 可以创建数据库和 `library` 用户。
+MySQL 容器会自动创建数据库和 `library` 用户。
 
 ## Navicat 连接信息
 
@@ -60,4 +61,4 @@ MySQL 标签页继续填写：
 
 这种方式下 MySQL 可以继续只监听 `127.0.0.1`，不用向公网开放 3306。
 
-如果选择直接连接，则需要让 MySQL 监听服务器网卡，并在云安全组或防火墙中只放行你的电脑 IP。为了安全，不建议对所有 IP 开放 MySQL 端口。
+如果选择直接连接，则需要把 `.env` 中的 `MYSQL_BIND_ADDRESS` 改为 `0.0.0.0`，重新启动 Compose，并在云安全组或防火墙中只放行你的电脑 IP。为了安全，不建议对所有 IP 开放 MySQL 端口。

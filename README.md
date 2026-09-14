@@ -39,13 +39,15 @@ mvn spring-boot:run
 
 - 默认：内存 H2，适合开发和测试
 - `server`：文件型 H2，保留为备用方案
-- `mysql`：服务器默认方案，MySQL 与项目部署在同一台机器，通过 `127.0.0.1:3306` 连接
+- `mysql`：MySQL 持久化配置
+- Docker Compose：服务器默认方案，同时运行 MySQL 和应用容器
 
 ```bash
-java -jar target/library-borrowing-system-1.1.0.jar --spring.profiles.active=mysql
+cp .env.example .env
+docker compose up -d --build
 ```
 
-MySQL 初始化脚本和完整服务器部署步骤见 `deploy/README.md`。与其他站点共用 Nginx 时，可设置 `CONTEXT_PATH=/library`、`PORT=18080`，然后使用 `deploy/nginx-library.conf` 中的子路径反向代理配置。
+完整服务器部署步骤见 `deploy/README.md`。与其他站点共用 Nginx 时，可设置 `CONTEXT_PATH=/library`、`PORT=18080`，然后使用 `deploy/nginx-library.conf` 中的子路径反向代理配置。
 
 ## 分支
 

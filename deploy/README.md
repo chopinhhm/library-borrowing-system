@@ -1,76 +1,86 @@
-# 服务器部署
+# Docker 服务器部署
 
-服务器现在使用 MySQL 配置启动，不再使用文件型 H2。
+服务器使用 Docker Compose 部署，包含两个容器：
 
-## 0. 在同台服务器安装 MySQL
+- `mysql`：MySQL 8.0，数据保存在 Docker 命名卷 `mysql-data`
+- `app`：图书借阅系统，监听容器内 `18080`
 
-Ubuntu 服务器可以执行：
+宿主机 Nginx 继续反向代理到 `127.0.0.1:18080`。
+
+## 1. 安装 Docker
+
+Ubuntu 服务器安装 Docker Engine 和 Compose 插件后，确认命令可用：
 
 ```bash
-sudo apt update
-sudo apt install -y mysql-server
-sudo systemctl enable --now mysql
+docker --version
+docker compose version
 ```
-
-应用仍通过 `DB_HOST=127.0.0.1` 连接本机 MySQL。
-
-## 1. 初始化 MySQL
-
-使用 MySQL 管理员账号执行 `deploy/mysql-init.sql`，并将脚本中的占位密码替换为正式密码。
 
 ## 2. 配置环境变量
 
-把 `deploy/library.env.example` 放到服务器：
-
-```text
-/opt/library-borrowing/library.env
-```
-
-至少确认这些值：
+进入项目根目录，从模板创建正式配置：
 
 ```bash
-PORT=18080
-SERVER_ADDRESS=127.0.0.1
-CONTEXT_PATH=/library
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_NAME=library
-DB_USER=library
+cp .env.example .env
+```
+
+至少修改这些密码：
+
+```bash
 DB_PASSWORD=你的数据库密码
+MYSQL_ROOT_PASSWORD=你的MySQL root密码
 ADMIN_PASSWORD=管理员初始密码
 READER_PASSWORD=读者初始密码
 ```
 
-## 3. 安装 systemd 服务
+默认配置会让 MySQL 只监听服务器的 `127.0.0.1:3306`，不直接暴露到公网。
 
-把 `deploy/library-borrowing.service` 放到：
+## 3. 构建并启动
 
-```text
-/etc/systemd/system/library-borrowing.service
+```bash
+docker compose up -d --build
+docker compose ps
+docker compose logs -f app
 ```
 
-然后重新加载并启动服务。
+第一次启动时，MySQL 会自动创建 `library` 数据库和 `library` 用户，JPA 会自动建表并写入演示数据。
 
 ## 4. 配置 Nginx
 
-把 `deploy/nginx-library.conf` 的内容加入服务器现有 Nginx 站点配置，访问路径为：
+把 `deploy/nginx-library.conf` 加入服务器现有 Nginx 配置，访问路径为：
 
 ```text
 https://你的域名/library/
 ```
 
-## 5. 确认数据库
+## 5. 更新项目
 
-服务第一次启动后，JPA 会自动建表。空数据库会自动写入 30 本图书、20 位读者和演示借阅数据。
+```bash
+git pull
+docker compose up -d --build
+```
 
-Navicat 使用 MySQL 类型连接：
+## 6. Navicat
+
+推荐在 Navicat 的 SSH 标签页配置服务器 SSH，然后 MySQL 连接使用：
 
 ```text
-主机：服务器 IP
+主机：127.0.0.1
 端口：3306
 数据库：library
 用户名：library
 密码：DB_PASSWORD
 ```
 
-Navicat 远程连接推荐使用 SSH 隧道，这样 MySQL 可以继续只监听 `127.0.0.1`，不用把 3306 暴露给整个公网。若必须直接连接，需要让 MySQL 监听服务器网卡，并在云安全组或防火墙中只放行你的电脑 IP。完整说明见 `docs/NAVICAT.md`。
+如果确实需要直接连接服务器 3306，可以把 `.env` 中的 `MYSQL_BIND_ADDRESS` 改为 `0.0.0.0`，然后重启 Compose，并在云安全组或防火墙中只放行你的电脑 IP。完整说明见 `docs/NAVICAT.md`。
+
+## 常用命令
+
+```bash
+docker compose stop
+docker compose start
+docker compose down
+docker compose logs -f mysql
+```
+
+`docker compose down` 不会删除数据库卷；只有显式执行 `docker compose down -v` 才会删除数据。
