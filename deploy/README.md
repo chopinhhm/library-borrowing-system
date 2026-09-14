@@ -33,7 +33,7 @@ ADMIN_PASSWORD=管理员初始密码
 READER_PASSWORD=读者初始密码
 ```
 
-默认配置会让 MySQL 只监听服务器的 `127.0.0.1:3306`，不直接暴露到公网。
+课设环境默认让 MySQL 监听服务器的 `0.0.0.0:3306`，方便同学用 Navicat 直接连接。
 
 ## 3. 构建并启动
 
@@ -62,17 +62,17 @@ docker compose up -d --build
 
 ## 6. Navicat
 
-推荐在 Navicat 的 SSH 标签页配置服务器 SSH，然后 MySQL 连接使用：
+同学直接新建 MySQL 连接即可：
 
 ```text
-主机：127.0.0.1
+主机：服务器公网 IP
 端口：3306
 数据库：library
 用户名：library
 密码：DB_PASSWORD
 ```
 
-如果确实需要直接连接服务器 3306，可以把 `.env` 中的 `MYSQL_BIND_ADDRESS` 改为 `0.0.0.0`，然后重启 Compose，并在云安全组或防火墙中只放行你的电脑 IP。完整说明见 `docs/NAVICAT.md`。
+服务器防火墙和云安全组需要放行 TCP `3306`。如果同学连接不上，优先检查这两个地方。
 
 ## 常用命令
 
