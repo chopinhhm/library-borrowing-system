@@ -33,7 +33,7 @@ mvn spring-boot:run
 - 管理员后台和读者端响应式网页
 - H2 本地/服务器持久化配置及 MySQL 可选配置
 
-初始化数据包含 12 本图书、3 类读者、6 位读者，以及可演示的在借、已归还、逾期、预约和催还记录。除 `admin / admin123` 和 `reader / reader123` 外，四位项目成员也有同名演示账号，例如 `huanghaoming / reader123`。
+初始化数据包含 30 本图书、5 类读者、20 位读者，以及可演示的在借、已归还、逾期、预约和催还记录。除 `admin / admin123` 和 `reader / reader123` 外，四位项目成员也有同名演示账号，例如 `huanghaoming / reader123`。
 
 ## 配置环境
 
