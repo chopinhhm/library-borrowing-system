@@ -24,14 +24,16 @@ docker compose version
 cp .env.example .env
 ```
 
-至少修改这些密码：
+课设默认使用以下明文密码：
 
 ```bash
-DB_PASSWORD=你的数据库密码
-MYSQL_ROOT_PASSWORD=你的MySQL root密码
-ADMIN_PASSWORD=管理员初始密码
-READER_PASSWORD=读者初始密码
+DB_PASSWORD=library123
+MYSQL_ROOT_PASSWORD=root123456
+ADMIN_PASSWORD=admin123
+READER_PASSWORD=reader123
 ```
+
+如果不需要统一默认密码，再在 `.env` 中自行修改。
 
 课设环境默认让 MySQL 监听服务器的 `0.0.0.0:3306`，方便同学用 Navicat 直接连接。
 
@@ -69,7 +71,7 @@ docker compose up -d --build
 端口：3306
 数据库：library
 用户名：library
-密码：DB_PASSWORD
+密码：library123
 ```
 
 服务器防火墙和云安全组需要放行 TCP `3306`。如果同学连接不上，优先检查这两个地方。

@@ -47,6 +47,8 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
+课设默认数据库账号为 `library / library123`，方便同学直接使用 Navicat 连接。
+
 完整服务器部署步骤见 `deploy/README.md`。与其他站点共用 Nginx 时，可设置 `CONTEXT_PATH=/library`、`PORT=18080`，然后使用 `deploy/nginx-library.conf` 中的子路径反向代理配置。
 
 ## 分支

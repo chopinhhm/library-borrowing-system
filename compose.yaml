@@ -6,8 +6,8 @@ services:
       TZ: Asia/Shanghai
       MYSQL_DATABASE: ${DB_NAME:-library}
       MYSQL_USER: ${DB_USER:-library}
-      MYSQL_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD in .env}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-library123}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123456}
     command:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
@@ -42,9 +42,9 @@ services:
       DB_PORT: 3306
       DB_NAME: ${DB_NAME:-library}
       DB_USER: ${DB_USER:-library}
-      DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD in .env}
-      READER_PASSWORD: ${READER_PASSWORD:?set READER_PASSWORD in .env}
+      DB_PASSWORD: ${DB_PASSWORD:-library123}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
+      READER_PASSWORD: ${READER_PASSWORD:-reader123}
     ports:
       - "127.0.0.1:${APP_PORT:-18080}:18080"
     networks:

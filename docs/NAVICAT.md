@@ -9,8 +9,8 @@ Docker Compose 的 `.env` 使用：
 ```bash
 DB_NAME=library
 DB_USER=library
-DB_PASSWORD=你的数据库密码
-MYSQL_ROOT_PASSWORD=你的MySQL root密码
+DB_PASSWORD=library123
+MYSQL_ROOT_PASSWORD=root123456
 MYSQL_BIND_ADDRESS=0.0.0.0
 MYSQL_PORT=3306
 ```
@@ -49,7 +49,7 @@ sudo ufw allow 3306/tcp
 | 主机 | 服务器公网 IP |
 | 端口 | `3306` |
 | 用户名 | `library` |
-| 密码 | `.env` 中的 `DB_PASSWORD` |
+| 密码 | `library123` |
 | 数据库 | `library` |
 
 第一次启动后，JPA 会自动创建表，并在空表时自动写入 30 本图书、20 位读者、借阅、预约、逾期和催还演示数据。
