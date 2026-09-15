@@ -23,13 +23,29 @@ public class CatalogService {
     }
 
     public List<Book> searchBooks(String keyword, String category, String shelfLocation, boolean availableOnly) {
-        List<Book> candidates = isBlank(keyword) ? books.findAll()
-            : books.findByTitleContainingIgnoreCaseOrAuthorContainingIgnoreCase(keyword.trim(), keyword.trim());
-        return candidates.stream()
-            .filter(book -> isBlank(category) || category.trim().equalsIgnoreCase(book.getCategory()))
-            .filter(book -> isBlank(shelfLocation) || containsIgnoreCase(book.getShelfLocation(), shelfLocation.trim()))
-            .filter(book -> !availableOnly || book.getAvailableCopies() > 0)
+        return loadCandidates(keyword).stream()
+            .filter(book -> matchesCategory(book, category))
+            .filter(book -> matchesShelf(book, shelfLocation))
+            .filter(book -> matchesAvailability(book, availableOnly))
             .collect(Collectors.toList());
+    }
+
+    private List<Book> loadCandidates(String keyword) {
+        if (isBlank(keyword)) return books.findAll();
+        String value = keyword.trim();
+        return books.findByTitleContainingIgnoreCaseOrAuthorContainingIgnoreCase(value, value);
+    }
+
+    private boolean matchesCategory(Book book, String category) {
+        return isBlank(category) || category.trim().equalsIgnoreCase(book.getCategory());
+    }
+
+    private boolean matchesShelf(Book book, String shelfLocation) {
+        return isBlank(shelfLocation) || containsIgnoreCase(book.getShelfLocation(), shelfLocation.trim());
+    }
+
+    private boolean matchesAvailability(Book book, boolean availableOnly) {
+        return !availableOnly || book.getAvailableCopies() > 0;
     }
 
     private boolean isBlank(String value) { return value == null || value.trim().isEmpty(); }
@@ -39,17 +55,27 @@ public class CatalogService {
 
     @Transactional
     public Book saveBook(Book book) {
-        if (book.getId() == null) {
-            if (books.existsByIsbn(book.getIsbn())) throw new BusinessException("ISBN 已存在");
-            book.setAvailableCopies(book.getTotalCopies());
-        } else {
-            Book existing = getBook(book.getId());
-            int borrowed = existing.getTotalCopies() - existing.getAvailableCopies();
-            if (book.getTotalCopies() < borrowed) throw new BusinessException("馆藏数量不能小于当前借出数量");
-            book.setAvailableCopies(book.getTotalCopies() - borrowed);
-        }
-        if (book.getAvailableCopies() > book.getTotalCopies()) throw new BusinessException("可借数量不能超过馆藏数量");
+        book.setAvailableCopies(resolveAvailableCopies(book));
         return books.save(book);
+    }
+
+    private int resolveAvailableCopies(Book book) {
+        if (book.getId() == null) return resolveNewBookCopies(book);
+        return resolveUpdatedBookCopies(book);
+    }
+
+    private int resolveNewBookCopies(Book book) {
+        if (books.existsByIsbn(book.getIsbn())) throw new BusinessException("ISBN 已存在");
+        return book.getTotalCopies();
+    }
+
+    private int resolveUpdatedBookCopies(Book book) {
+        Book existing = getBook(book.getId());
+        int borrowed = existing.getTotalCopies() - existing.getAvailableCopies();
+        if (book.getTotalCopies() < borrowed) throw new BusinessException("馆藏数量不能小于当前借出数量");
+        int available = book.getTotalCopies() - borrowed;
+        if (available > book.getTotalCopies()) throw new BusinessException("可借数量不能超过馆藏数量");
+        return available;
     }
 
     public Book getBook(Long id) { return books.findById(id).orElseThrow(() -> new BusinessException("图书不存在")); }
@@ -67,10 +93,19 @@ public class CatalogService {
 
     @Transactional
     public ReaderType saveReaderType(ReaderType type) {
-        if (type.getName() == null || type.getName().trim().isEmpty()) throw new BusinessException("读者类型名称不能为空");
-        if (type.getMaxBooks() < 1 || type.getLoanDays() < 1 || type.getMaxRenewals() < 0) throw new BusinessException("借阅规则数值不合法");
-        if (type.getDailyFineRate() == null || type.getDailyFineRate().signum() < 0) throw new BusinessException("罚金标准不合法");
+        validateReaderType(type);
         return readerTypes.save(type);
+    }
+
+    private void validateReaderType(ReaderType type) {
+        if (type.getName() == null || type.getName().trim().isEmpty()) throw new BusinessException("读者类型名称不能为空");
+        validateReaderTypeNumbers(type);
+        if (type.getDailyFineRate() == null || type.getDailyFineRate().signum() < 0) throw new BusinessException("罚金标准不合法");
+    }
+
+    private void validateReaderTypeNumbers(ReaderType type) {
+        boolean invalidCounts = type.getMaxBooks() < 1 || type.getLoanDays() < 1;
+        if (invalidCounts || type.getMaxRenewals() < 0) throw new BusinessException("借阅规则数值不合法");
     }
 
     @Transactional

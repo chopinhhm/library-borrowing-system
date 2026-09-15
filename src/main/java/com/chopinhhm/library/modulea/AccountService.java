@@ -32,27 +32,51 @@ public class AccountService implements UserDetailsService {
 
     @Transactional
     public UserAccount create(String username, String password, UserAccount.Role role, Long readerId) {
-        if (username == null || username.trim().isEmpty()) throw new BusinessException("用户名不能为空");
-        if (password == null || password.length() < 6) throw new BusinessException("密码至少 6 位");
+        validateNewAccount(username, password);
         if (accounts.existsByUsername(username)) throw new BusinessException("用户名已存在");
         UserAccount account = new UserAccount();
         account.setUsername(username.trim());
         account.setPasswordHash(encoder.encode(password));
-        account.setRole(role == null ? UserAccount.Role.READER : role);
+        account.setRole(normalizeRole(role));
         account.setReaderId(readerId);
         return accounts.save(account);
+    }
+
+    private void validateNewAccount(String username, String password) {
+        if (username == null || username.trim().isEmpty()) throw new BusinessException("用户名不能为空");
+        validatePassword(password);
     }
 
     @Transactional
     public UserAccount update(Long id, Boolean enabled, String password, UserAccount.Role role, Long readerId) {
         UserAccount account = accounts.findById(id).orElseThrow(() -> new BusinessException("账号不存在"));
-        if (enabled != null) account.setEnabled(enabled.booleanValue());
-        if (password != null && !password.trim().isEmpty()) {
-            if (password.length() < 6) throw new BusinessException("密码至少 6 位");
-            account.setPasswordHash(encoder.encode(password));
-        }
-        if (role != null) account.setRole(role);
+        updateEnabled(account, enabled);
+        updatePassword(account, password);
+        updateRole(account, role);
         account.setReaderId(readerId);
         return accounts.save(account);
+    }
+
+    private void updateEnabled(UserAccount account, Boolean enabled) {
+        if (enabled != null) account.setEnabled(enabled.booleanValue());
+    }
+
+    private void updatePassword(UserAccount account, String password) {
+        if (password == null || password.trim().isEmpty()) return;
+        validatePassword(password);
+        account.setPasswordHash(encoder.encode(password));
+    }
+
+    private void updateRole(UserAccount account, UserAccount.Role role) {
+        if (role != null) account.setRole(role);
+    }
+
+    private UserAccount.Role normalizeRole(UserAccount.Role role) {
+        if (role == null) return UserAccount.Role.READER;
+        return role;
+    }
+
+    private void validatePassword(String password) {
+        if (password == null || password.length() < 6) throw new BusinessException("密码至少 6 位");
     }
 }
