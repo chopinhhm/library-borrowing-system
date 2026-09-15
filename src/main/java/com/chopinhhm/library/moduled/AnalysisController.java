@@ -8,7 +8,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
+/**
+ * 逾期数据分析控制器
+ * 提供逾期借阅数据查询、逾期报表CSV导出接口，供管理员使用
+ */
 @RestController
 @RequestMapping("/api/admin/analysis")
 public class AnalysisController {
