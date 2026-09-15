@@ -5,23 +5,23 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+// 基础数据服务负责图书、读者和借阅规则维护。
 @Service
 public class CatalogService {
     private final BookRepository books;
     private final ReaderRepository readers;
     private final ReaderTypeRepository readerTypes;
-
+    // 通过构造器注入三类基础数据仓储。
     public CatalogService(BookRepository books, ReaderRepository readers, ReaderTypeRepository readerTypes) {
         this.books = books;
         this.readers = readers;
         this.readerTypes = readerTypes;
     }
-
+    // 无过滤条件时返回全部馆藏。
     public List<Book> searchBooks(String keyword) {
         return searchBooks(keyword, null, null, false);
     }
-
+    // 按关键字、分类、书架和可借状态组合筛选。
     public List<Book> searchBooks(String keyword, String category, String shelfLocation, boolean availableOnly) {
         return loadCandidates(keyword).stream()
             .filter(book -> matchesCategory(book, category))
@@ -29,46 +29,46 @@ public class CatalogService {
             .filter(book -> matchesAvailability(book, availableOnly))
             .collect(Collectors.toList());
     }
-
+    // 关键字为空时走全量查询，否则按书名或作者检索。
     private List<Book> loadCandidates(String keyword) {
         if (isBlank(keyword)) return books.findAll();
         String value = keyword.trim();
         return books.findByTitleContainingIgnoreCaseOrAuthorContainingIgnoreCase(value, value);
     }
-
+    // 分类为空表示不过滤。
     private boolean matchesCategory(Book book, String category) {
         return isBlank(category) || category.trim().equalsIgnoreCase(book.getCategory());
     }
-
+    // 书架位置支持忽略大小写的包含匹配。
     private boolean matchesShelf(Book book, String shelfLocation) {
         return isBlank(shelfLocation) || containsIgnoreCase(book.getShelfLocation(), shelfLocation.trim());
     }
-
+    // 仅看可借时保留可借数量大于零的图书。
     private boolean matchesAvailability(Book book, boolean availableOnly) {
         return !availableOnly || book.getAvailableCopies() > 0;
     }
-
+    // 统一的空字符串判断。
     private boolean isBlank(String value) { return value == null || value.trim().isEmpty(); }
     private boolean containsIgnoreCase(String value, String part) {
         return value != null && value.toLowerCase().contains(part.toLowerCase());
     }
-
+    // 新增和编辑共用保存入口，库存计算由独立方法处理。
     @Transactional
     public Book saveBook(Book book) {
         book.setAvailableCopies(resolveAvailableCopies(book));
         return books.save(book);
     }
-
+    // 按新增或编辑场景计算最终可借数量。
     private int resolveAvailableCopies(Book book) {
         if (book.getId() == null) return resolveNewBookCopies(book);
         return resolveUpdatedBookCopies(book);
     }
-
+    // 新增图书默认全部可借，同时检查 ISBN 唯一性。
     private int resolveNewBookCopies(Book book) {
         if (books.existsByIsbn(book.getIsbn())) throw new BusinessException("ISBN 已存在");
         return book.getTotalCopies();
     }
-
+    // 编辑时根据已借数量重新计算可借数量。
     private int resolveUpdatedBookCopies(Book book) {
         Book existing = getBook(book.getId());
         int borrowed = existing.getTotalCopies() - existing.getAvailableCopies();
@@ -77,20 +77,20 @@ public class CatalogService {
         if (available > book.getTotalCopies()) throw new BusinessException("可借数量不能超过馆藏数量");
         return available;
     }
-
+    // 按主键查询图书，不存在时抛出业务异常。
     public Book getBook(Long id) { return books.findById(id).orElseThrow(() -> new BusinessException("图书不存在")); }
-
+    // 存在未归还副本时禁止删除图书。
     @Transactional
     public void deleteBook(Long id) {
         Book book = getBook(id);
         if (book.getAvailableCopies() != book.getTotalCopies()) throw new BusinessException("存在未归还副本，不能删除");
         books.delete(book);
     }
-
+    // 返回全部读者资料。
     public List<Reader> readers() { return readers.findAll(); }
-
+    // 返回全部读者类型和借阅规则。
     public List<ReaderType> readerTypes() { return readerTypes.findAll(); }
-
+    // 保存读者类型前统一验证名称、借阅数量和罚金标准。
     @Transactional
     public ReaderType saveReaderType(ReaderType type) {
         validateReaderType(type);
